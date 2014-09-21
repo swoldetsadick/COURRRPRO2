@@ -25,7 +25,7 @@ Storms and other severe weather events can cause both public health and economic
 This project involves exploring the U.S. National Oceanic and Atmospheric Administration's (NOAA) storm database. This database tracks characteristics of major storms and weather events in the United States, including when and where they occur, as well as estimates of any fatalities, injuries, and property damage.<br>
 The present analysis looks at the material cost, as a sum of property and crop damage sustained, and the human cost, as a sum of injuries and fatalities sustained, during different type of storm events. The outcome of such a study have an obvious implication for emergency deployment strategies in case of storm type weather events.<br>
 The data used in this analysis is extracted from the NOAA storm database, and covers the periods 1950 to 2011, recent years records being more complete. The analysis was made using the R statistic software version `r rversion` on a computer using Windows OS version `r sysversion` and data downloaded on `r time` directly from NOAA's storm database.<br>
-Only tools of descriptive statistics analysis are used here to answer the above problematic. The study found...
+Only tools of descriptive statistics analysis are used here to answer the above problematic. The study found that the type of storm events that are most harmful to population health are are Tornado, Lightning and Floods in descending order and that the types of storm events that have the greatest economic consequences are Floods, Tornadoes and Winter Storms in descending order.
 
 ```{r set-options, echo = TRUE, cache = TRUE}
 ```
@@ -177,8 +177,8 @@ data$CROPDMGEXP <- NULL
 data$PROPDMGEXP <- NULL
 ```
 <h4 align="left"> E - Human Cost, FATALITIES and INJURIES variables</h4>
-Now contrary to the Material cost calculations, there is no unit associated with human injuries or human fatalities. Therefore a simple summation between these two variables to calculate the severity of type of storms on human lives would be wrong. A good methods must be devised to assess impact on human life. Indeed loss of life must take precedent on injuries, however can an event killing only 1 person be categorized as more nuisance to human life than a storm that injured 100 persons? These are ethical questions that have no easy answers but for the purpose of this study one can follow the 1/10 rule of fatality to injury severity rapport used in the car industry. For more information read about RAPEX methods[here](http://corporate.nca.ie/eng/Business_Zone/Presentations/NCA-Rapex-DG-SancoTFairley_New-RiskAssess-Guidelines.pdf).<br>
-That is to say that 10 injuries would cout as one fatality. This type of ranking would bring more flexibility to our analysis. So in the next line of code numbers of injuries is transformed to number of fatalities by this 1/10 method, one can call this potential fatality **PF**, and added to observed fatalities column to create a new variable **TF** for total fatalities, while **FATALITIES** variable is renamed **OF** for observed fatalities and **INJURIES** is rebranded **OI** for observed njuries itself. The residual fatalities are called **RI**.
+Now contrary to the Material cost calculations, there is no unit associated with human injuries or human fatalities. Therefore a simple summation between these two variables to calculate the severity of type of storms on human lives would be wrong. A good methods must be devised to assess impact on human life. Indeed loss of life must take precedent on injuries, however can an event killing only 1 person be categorized as more nuisance to human life than a storm that injured 100 persons? These are ethical questions that have no easy answers but for the purpose of this study one can follow the 1/10 rule of fatality to injury severity rapport used in the car industry. For more information read about RAPEX methods [here](http://corporate.nca.ie/eng/Business_Zone/Presentations/NCA-Rapex-DG-SancoTFairley_New-RiskAssess-Guidelines.pdf).<br>
+That is to say that 10 injuries would count as one fatality. This type of ranking would bring more flexibility to our analysis. So in the next line of code numbers of injuries is transformed to number of fatalities by this 1/10 method, one can call this potential fatality **PF**, and added to observed fatalities column to create a new variable **TF** for total fatalities, while **FATALITIES** variable is renamed **OF** for observed fatalities and **INJURIES** is re branded **OI** for observed injuries. The residual fatalities are called **RI**.
 ```{r, cache = TRUE}
 data$PF <- round((data$INJURIES)/10,digits=0)
 data$TF <- data$FATALITIES+data$PF
@@ -187,3 +187,141 @@ names(data)[3] <- "OF"
 names(data)[4] <- "OI"
 names(data)
 ```
+<br>
+<h1 align = "center"> Results </h1>
+<div style="border-top: 2px dashed ; margin-top: 1em; padding-top: 1em;"> </div>
+```{r, cache = TRUE}
+col = ncol(data)
+row = nrow(data)
+names(data)
+```
+In the end then the analysis will be conducted on a data set of `r row` observations for  `r col` variables whose names are listed above. The definitions of each variable can be found in above sections.But what about missing data?
+<h4 align="left"> A - Treating Missing Data </h4>
+```{r, cache = TRUE}
+p <- sum(is.na(data))
+percentag <- round((p/row)*100, digits = 2)
+```
+Observe that the data has only `r p` NA'S throughout the data set. The simple omission of NA will not then overly affect distributions within our data set. This number representing only `r percentag`% of our total observation. Let's then omit unobserved points from data and reassign to the new data set hence created the variable <u>data</u>.
+```{r, cache = TRUE}
+data <- na.omit(data)
+```
+<h4 align="left"> B - Simple Answers </h4>
+In answer to the questions which type of storm type is of greatest economic consequences, one can just take the data add the total number of damages cost in US Dollars materially sustained by type of storm event using `ddply` in `library(plyr)` then order the new data obtained and observe which type of storm event has costed the United States the most since 1950 materially.Similarly one can answer to the question which type of storm type is the most harmful to population health by adding Total Fatalities numbers and Residual Injuries by group, then re-creating Total Fatalities and Residual Injuries by applying the 1/10 rule described above, order the data hence obtained by Total Fatalities first then by Residual Injuries. The next chunk of R code does just that:
+```{r, cache = TRUE}
+options(scipen=10) # avoids scientific expressions
+suppressMessages(library(plyr))
+data1 <- ddply(data, .(as.factor(EVTYPE)), summarize,tot=sum(as.numeric(MC)))
+data1 <- arrange(data1, desc(tot))
+names(data1) <- c("Storm Event Type", "Total Damage Cost in US Dollars")
+
+data2 <- ddply(data, .(as.factor(EVTYPE)), summarize,tot1=sum(as.numeric(TF)),tot2=sum(as.numeric(RI)))
+data2$tot1 <- data2$tot1 + round((data2$tot2)/10, digit = 0)
+data2$tot2 <- round(((data2$tot2/10) - floor(data2$tot2/10))*10,digits=0)
+data2 <- arrange(data2, desc(tot1), desc(tot2))
+names(data2) <- c("Storm Event Type", "Total Fatalities", "Residual Injuries")
+
+data1
+data2
+```
+In the above table one can get some kind of answer to these two question, the three type of storm events that were the most harmful to population health in the United States from 1950 to 2011 were in descending order Tornado, Lightning and TSTM Wind type of storms, in the same period the three types of storm events that were of greatest economic consequence in descending order were Floods, Tornado and Hail (See above for complete raking in descending order).<br>
+However this is not answering exactly to the question for the simple reason that the above method of analysis is to prone to outliers. Single extremes observation can greatly affect outcomes. A deeper look to data is needed here.
+<h4 align="left"> C - A deeper Look </h4>
+Indeed the above analysis can lead to radically different outcome because it is to dependent to extreme observation. One way of monitoring extreme values is to observe histograms, an other better way would be to summarize data with a central and dispersion statistics. One can easily pick *Mean* as the easy central value then *median*, *quantiles* and *standard deviations* to study dispersion.<br>
+
+<h6 align="left">1 - Material cost</h6>
+One way of making an analysis somehow less dependent to outliers is by taken the mean in stead of just simple summations. Here is a calculation of the mean of total material damage cost in US Dollars by storm in the US from 1950 to 2011. *Mean* is calculated separately for each group, and for variable **MC**, **PROPDMG**, and **CROPDMG**.
+```{r}
+options(scipen=10) # avoids scientific expressions
+suppressMessages(library(plyr))
+data3 <- ddply(data, .(as.factor(EVTYPE)), summarize,tot=mean(as.numeric(MC)))
+data31 <- arrange(data3, desc(tot))
+data4 <- ddply(data, .(as.factor(EVTYPE)), summarize,tot=mean(as.numeric(PROPDMG)))
+data41 <- arrange(data4, desc(tot))
+data5 <- ddply(data, .(as.factor(EVTYPE)), summarize,tot=mean(as.numeric(CROPDMG)))
+data51 <- arrange(data5, desc(tot))
+names(data31) <- c("Storm Event Type", "Average Material Damage Cost in US Dollars")
+names(data41) <- c("Storm Event Type", "Average Property Damage Cost in US Dollars")
+names(data51) <- c("Storm Event Type", "Average Crop Damage Cost in US Dollars")
+data31
+data41
+data51
+```
+In terms of both property damage and crop damage, and in property damage terms only, it is in average, Flood, Tornado and Winter Storm type of storm that have the greatest economic consequences in descending order. This is a clear difference from the ordering Floods, Tornado and Hail observed above. In terms of crop damage only,it is in average, Flood, Heavy Rain and High Wind type of storm that have the greatest economic consequences in descending order. Additionally one can see that it is mainly property damage that is leading decision in terms of material damage cost impact.<br>
+However, the true measure of *Mean* fitness as summary statistics can only be judged by dispersion *measures*. Hence, *median*, *quantiles* at 75% and 25% and *standard deviations* are calculated by group.
+```{r,cache=TRUE}
+options(scipen=10) # avoids scientific expressions
+suppressMessages(library(plyr))
+data6 <- ddply(data, .(as.factor(EVTYPE)), summarize, sd=sd(as.numeric(MC)),q25=quantile(as.numeric(MC),probs = 0.25),q75=quantile(as.numeric(MC),probs= 0.75),med=median(as.numeric(MC)))
+data7 <- ddply(data, .(as.factor(EVTYPE)), summarize, sd=sd(as.numeric(PROPDMG)),q25=quantile(as.numeric(PROPDMG),probs = 0.25),q75=quantile(as.numeric(PROPDMG),probs= 0.75),med=median(as.numeric(PROPDMG)))
+data8 <- ddply(data, .(as.factor(EVTYPE)), summarize, sd=sd(as.numeric(CROPDMG)),q25=quantile(as.numeric(CROPDMG),probs = 0.25),q75=quantile(as.numeric(CROPDMG),probs= 0.75),med=median(as.numeric(CROPDMG)))
+data6 <- arrange(data6, desc(sd))
+data7 <- arrange(data7, desc(sd))
+data8 <- arrange(data8, desc(sd))
+data6
+data7
+data8
+```
+What do this summary stastics tell us. They tell us first that for most type of storm events, half or 75% of them occur without any material damage sustained by the population. Only tornadoes, both type of Thunderstorms and Lightnings cause perceptible damage half of the time. Both type of Floods and Winds cause damage 25% of the time. But none of the type of storm cause crop damage, not even at 25% of the time.<br>
+In light of Standard deviation calculations one should consider rearraging the list of types of events that have the greatest economic consequences. One should choose the smallest standard deviation possible, making the mean less dependent to outliers.<br>
+However in this case variability in the data come mostly of type of storm with highest average, lower average types having much les variability because values for these type of storms are mostly null. Hence in this case it is decided to keep the list made with average calculations.<br>
+The three types of events that have the greatest economic consequences are Floods, Tornadoes and Winter Storms in descending order. This is also true for economic consequnce viewed from property damage only point of view. However condidering only costs to damage to cops, the list would be in descending order, Flood, Heavy Rain and High Wind.
+The graph below illustrates these facts.
+```{r}
+suppressMessages(library(plyr))
+data9 <- ddply(data, .(as.factor(EVTYPE)), summarize,tot=sum(as.numeric(MC)),tot1=sum(as.numeric(PROPDMG)),tot2=sum(as.numeric(CROPDMG)))
+data9 <- data.frame(t(as.matrix(data9)))
+data9 <-data9[-1,]
+names(data9) <- c("FLASH FLOOD","FLOOD","HAIL","HEAVY RAIN","HEAVY SNOW","HIGH WIND","LIGHTNING","THUNDERSTORM WIND","THUNDERSTORM WINDS", "TORNADO","TSTM WIND","WINTER STORM")
+x <-barplot(as.matrix(data9), xaxt="n", col = heat.colors(3))
+labs <- paste(names(table(colnames(data9))), "")
+text(cex=.7, x=x-.25, y=-50000000000, labs, xpd=TRUE, srt=45)
+title(main="Total Damage Cost in USD of storm event in the US  1950 -2011", ylab="Damage Cost in US Dollars")
+mtext("Type of storm Event",1)
+legend("topright", fill = heat.colors(3), legend = c("Crop Damage Costs","Property Damage Costs","Material Damage Cost"))
+```
+<h6 align="left">2 - Material cost</h6>
+The same observations as above are made. The code chunck below calculates in mean the type of storm event that is most harmful to population health.<br>
+```{r, cache = TRUE}
+options(scipen=10) # avoids scientific expressions
+suppressMessages(library(plyr))
+data11 <- ddply(data, .(as.factor(EVTYPE)), summarize,tot=mean(as.numeric(TF)))
+data111 <- arrange(data11, desc(tot))
+data12 <- ddply(data, .(as.factor(EVTYPE)), summarize,tot=mean(as.numeric(OF)))
+data121 <- arrange(data12, desc(tot))
+data13 <- ddply(data, .(as.factor(EVTYPE)), summarize,tot=mean(as.numeric(OI)))
+data131 <- arrange(data13, desc(tot))
+names(data111) <- c("Storm Event Type", "Average Number of Total Fatalities")
+names(data121) <- c("Storm Event Type", "Average Number of Observed Fatalities")
+names(data131) <- c("Storm Event Type", "Average Number of Observed Injuries")
+data111
+data121
+data131
+```
+Without ambiguity the three type of storm events that are the most harmful to population health are Tornado, Lightning and Floods. This observations stands whether one looks at observed Injuries and fatalities, or total number of fatalities.However look at how for winter Storm Injuries are so high that one can look at Winter Storm at the fourth rank compared to flash floods.<br>
+Dispersion statistics now:
+```{r,cache=TRUE}
+options(scipen=10) # avoids scientific expressions
+suppressMessages(library(plyr))
+data6 <- ddply(data, .(as.factor(EVTYPE)), summarize, sd=sd(as.numeric(TF)),q25=quantile(as.numeric(TF),probs = 0.25),q75=quantile(as.numeric(TF),probs= 0.75),med=median(as.numeric(TF)))
+data7 <- ddply(data, .(as.factor(EVTYPE)), summarize, sd=sd(as.numeric(OF)),q25=quantile(as.numeric(OF),probs = 0.25),q75=quantile(as.numeric(OF),probs= 0.75),med=median(as.numeric(OF)))
+data8 <- ddply(data, .(as.factor(EVTYPE)), summarize, sd=sd(as.numeric(OI)),q25=quantile(as.numeric(OI),probs = 0.25),q75=quantile(as.numeric(OI),probs= 0.75),med=median(as.numeric(OI)))
+data6 <- arrange(data6, desc(sd))
+data7 <- arrange(data7, desc(sd))
+data8 <- arrange(data8, desc(sd))
+data6
+data7
+data8
+```
+IN THIS CASE STANDARD DEVIATIONS ARE TOO LOW TO MATTER. This actually tells us that the mean is a very good way to summaries our distributions, because variations around it are not so high. One can reatin then and they that the type of storm events that are most harmful to population health are are Tornado, Lightning and Floods in descending order.
+```{r}
+
+plot(data13$tot, col="green", type="l", xlab="",ylab="")
+lines(row.names(data11),data11$tot, col="blue")
+lines(data12$tot, col="red")
+title(main="Average Human Cost in Storm Events in the US 1950 - 2011", sub="by type of storm event", xlab="Storm type", ylab="Average Number of Person")
+legend(1, 1.5,c("Observed Fatalities","Total Fatalities","Observed Injuries"),lwd=c(2.5,2.5,2.5),col=c("green","blue","red"))
+```
+<h1 align = "center"> Conclusion </h1>
+<div style="border-top: 2px dashed ; margin-top: 1em; padding-top: 1em;"> </div>
+The types of storm events that are most harmful to population health are are Tornado, Lightning and Floods in descending order.
+The types of events that have the greatest economic consequences are Floods, Tornado and Winter Storms in descending order.
