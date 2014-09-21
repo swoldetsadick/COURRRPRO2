@@ -260,20 +260,29 @@ rude</code></pre>
 ## HEAVY SNOW                    15708
 ## HEAVY RAIN                    11723
 ## WINTER STORM                  11433</code></pre>
-<p>The question of clustering the rest of categories in group one could call <em>other</em> has occured. However this idea can be discarded because of the wide variety of types of storm events that this group would represent, rendering any conclusions that could be drawn from it void. The next line of code then subsets the part of data that interests us and reassign to this subset the variable <u>data</u>.</p>
+<p>The question of clustering the rest of categories in group one could call <em>other</em> has occurred. However this idea can be discarded because of the wide variety of types of storm events that this group would represent, rendering any conclusions that could be drawn from it void. The next line of code then subsets the part of data that interests us and reassign to this subset the variable <u>data</u>.</p>
 <pre class="r"><code>data &lt;- data[data$EVTYPE %in% rownames(rude),]</code></pre>
 <h4 align="left"> 
-D - CROPDMG and PROPDMG variables
+D - Material Cost, CROPDMG and PROPDMG variables
 </h4>
 <p>As seen above, CROPDMGEXP and PROPDMGEXP variables are multipliers of variables CROPDMG and PROPDMG respectively, the two latter variables recording the material damage cost caused by the different storms. The material damage cost is viewed as the sum of damage to property and damage to crops. The unit of measure for both type of the cost is the US Dollars. So one can just use CROPDMGEXP and PROPDMGEXP columns to multiply CROPDMG and PROPDMG columns respectively element by element. The resulting column will give an estimation of damage in plain US Dollars. The latter two columns then can be erased. An additional column that sums up the new CROPDMG and PROPDMG columns called <strong>MC</strong> for material cost can be constructed, because both columns are expressed now in the same unit called US Dollars. The unit of the new column is hence identically the US Dollar.The code chunk just below does just that.</p>
 <pre class="r"><code>data$CROPDMG &lt;- data$CROPDMGEXP*data$CROPDMG
 data$PROPDMG &lt;- data$PROPDMGEXP*data$PROPDMG
 data$MC &lt;- data$CROPDMG + data$PROPDMG
 data$CROPDMGEXP &lt;- NULL
-data$PROPDMGEXP &lt;- NULL
+data$PROPDMGEXP &lt;- NULL</code></pre>
+<h4 align="left"> 
+E - Human Cost, FATALITIES and INJURIES variables
+</h4>
+<p>Now contrary to the Material cost calculations, there is no unit associated with human injuries or human fatalities. Therefore a simple summation between these two variables to calculate the severity of type of storms on human lives would be wrong. A good methods must be devised to assess impact on human life. Indeed loss of life must take precedent on injuries, however can an event killing only 1 person be categorized as more nuisance to human life than a storm that injured 100 persons? These are ethical questions that have no easy answers but for the purpose of this study one can follow the 1/10 rule of fatality to injury severity rapport used in the car industry. For more information read about RAPEX methods<a href="http://corporate.nca.ie/eng/Business_Zone/Presentations/NCA-Rapex-DG-SancoTFairley_New-RiskAssess-Guidelines.pdf">here</a>.<br> That is to say that 10 injuries would cout as one fatality. This type of ranking would bring more flexibility to our analysis. So in the next line of code numbers of injuries is transformed to number of fatalities by this 1/10 method, one can call this potential fatality <strong>PF</strong>, and added to observed fatalities column to create a new variable <strong>TF</strong> for total fatalities, while <strong>FATALITIES</strong> variable is renamed <strong>OF</strong> for observed fatalities and <strong>INJURIES</strong> is rebranded <strong>OI</strong> for observed njuries itself. The residual fatalities are called <strong>RI</strong>.</p>
+<pre class="r"><code>data$PF &lt;- round((data$INJURIES)/10,digits=0)
+data$TF &lt;- data$FATALITIES+data$PF
+data$RI &lt;- round(((data$INJURIES/10) - floor(data$INJURIES/10))*10,digits=0)
+names(data)[3] &lt;- &quot;OF&quot;
+names(data)[4] &lt;- &quot;OI&quot;
 names(data)</code></pre>
-<pre><code>## [1] &quot;BGN_DATE&quot;   &quot;EVTYPE&quot;     &quot;FATALITIES&quot; &quot;INJURIES&quot;   &quot;PROPDMG&quot;   
-## [6] &quot;CROPDMG&quot;    &quot;MC&quot;</code></pre>
+<pre><code>##  [1] &quot;BGN_DATE&quot; &quot;EVTYPE&quot;   &quot;OF&quot;       &quot;OI&quot;       &quot;PROPDMG&quot;  &quot;CROPDMG&quot; 
+##  [7] &quot;MC&quot;       &quot;PF&quot;       &quot;TF&quot;       &quot;RI&quot;</code></pre>
 
 
 </div>

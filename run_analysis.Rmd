@@ -162,7 +162,7 @@ We can indeed see that about `r percent`% of original observation will be conser
 names(rude)="Occurrence Count"
 rude
 ```
-The question of clustering the rest of categories in group one could call *other* has occured. However this idea can be discarded because of the wide variety of types of storm events that this group would represent, rendering any conclusions that could be drawn from it void.
+The question of clustering the rest of categories in group one could call *other* has occurred. However this idea can be discarded because of the wide variety of types of storm events that this group would represent, rendering any conclusions that could be drawn from it void.
 The next line of code then subsets the part of data that interests us and reassign to this subset the variable <u>data</u>.
 ```{r, cache = TRUE}
 data <- data[data$EVTYPE %in% rownames(rude),]
@@ -177,4 +177,13 @@ data$CROPDMGEXP <- NULL
 data$PROPDMGEXP <- NULL
 ```
 <h4 align="left"> E - Human Cost, FATALITIES and INJURIES variables</h4>
-
+Now contrary to the Material cost calculations, there is no unit associated with human injuries or human fatalities. Therefore a simple summation between these two variables to calculate the severity of type of storms on human lives would be wrong. A good methods must be devised to assess impact on human life. Indeed loss of life must take precedent on injuries, however can an event killing only 1 person be categorized as more nuisance to human life than a storm that injured 100 persons? These are ethical questions that have no easy answers but for the purpose of this study one can follow the 1/10 rule of fatality to injury severity rapport used in the car industry. For more information read about RAPEX methods[here](http://corporate.nca.ie/eng/Business_Zone/Presentations/NCA-Rapex-DG-SancoTFairley_New-RiskAssess-Guidelines.pdf).<br>
+That is to say that 10 injuries would cout as one fatality. This type of ranking would bring more flexibility to our analysis. So in the next line of code numbers of injuries is transformed to number of fatalities by this 1/10 method, one can call this potential fatality **PF**, and added to observed fatalities column to create a new variable **TF** for total fatalities, while **FATALITIES** variable is renamed **OF** for observed fatalities and **INJURIES** is rebranded **OI** for observed njuries itself. The residual fatalities are called **RI**.
+```{r, cache = TRUE}
+data$PF <- round((data$INJURIES)/10,digits=0)
+data$TF <- data$FATALITIES+data$PF
+data$RI <- round(((data$INJURIES/10) - floor(data$INJURIES/10))*10,digits=0)
+names(data)[3] <- "OF"
+names(data)[4] <- "OI"
+names(data)
+```
