@@ -1,22 +1,180 @@
 ---
-title: "Untitled"
+title: "The Human and Material Costs of Storm Events in the US"
 author: "Woldetsadick Selam Getachew"
 date: "Sunday, September 21, 2014"
 output: html_document
 ---
+```{r, echo = FALSE, results='hide', cache = TRUE}
+old.loc <- Sys.getlocale("LC_TIME")
+Sys.setlocale(category = "LC_TIME", locale="English")
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+time <- format(Sys.time(),"%a, %b %d %Y, %X")
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+rversion <- R.Version()
+rversion <- rversion[[13]]
 
-```{r}
-summary(cars)
+sysversion <- sessionInfo()
+sysversion <- sysversion[2]
+
 ```
+<div style="border-top: 2px solid ; margin-top: 1em; padding-top: 1em;"> </div>
+<h1 align = "center"> Synopsis </h1>
+<div style="border-top: 2px dashed ; margin-top: 1em; padding-top: 1em;"> </div>
 
-You can also embed plots, for example:
+Storms and other severe weather events can cause both public health and economic problems for communities and municipalities. Many severe events can result in fatalities, injuries, and property damage, and preventing such outcomes to the extent possible is a key concern.<br>
+This project involves exploring the U.S. National Oceanic and Atmospheric Administration's (NOAA) storm database. This database tracks characteristics of major storms and weather events in the United States, including when and where they occur, as well as estimates of any fatalities, injuries, and property damage.<br>
+The present analysis looks at the material cost, as a sum of property and crop damage sustained, and the human cost, as a sum of injuries and fatalities sustained, during different type of storm events. The outcome of such a study have an obvious implication for emergency deployment strategies in case of storm type weather events.<br>
+The data used in this analysis is extracted from the NOAA storm database, and covers the periods 1950 to 2011, recent years records being more complete. The analysis was made using the R statistic software version `r rversion` on a computer using Windows OS version `r sysversion` and data downloaded on `r time` directly from NOAA's storm database.<br>
+Only tools of descriptive statistics analysis are used here to answer the above problematic. The study found...
 
-```{r, echo=FALSE}
-plot(cars)
+```{r set-options, echo = TRUE, cache = TRUE}
 ```
+<br>
+<h1 align = "center"> Loading and Processing the Raw Data </h1>
+<div style="border-top: 2px dashed ; margin-top: 1em; padding-top: 1em;"> </div>
+From the [U.S. National Oceanic and Atmospheric Administration's (NOAA) storm database](http://www.noaa.gov/wx.html) that tracks and records characteristics of major storms and weather events in the United States, including when and where they occur, as well as estimates of any fatalities, injuries, and property damage.The obtained data covers the periods 1950 to 2011, recent years records being more complete. This data can independently be downloaded [here](https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2).
+<h4 align="left"> A - Loading the Raw Data</h4>
+First the data's original url is recorded in a variable called **url**, then this variable is used to download the data set directly from the NOAA's storm database to the current working directory and uncompressed.Next 100 rows of the downloaded data set are loaded in the working environment and after column names are recorded in variable called **name**.<br>
+More, than just the extraction of column names of the data set, it is known that  missing values are coded as NA in the data and that records are comma separated. This set of information is coded into the `read.csv()` function that read the complete data set and assigns it <u>data</u> variable. Moreover time on start of data loading is recorder in **tmp** variable, and subtracted out of updated time after the end of data loading to observe how long data loading took. This interval of time is recorded in **interval** variable.
+```{r, cache = TRUE}
+url <- "http://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2"
+download.file(url, "repdata-data-StormData.csv.bz2", mode="wb")
+suppressWarnings(unzip("datasur.dat"))
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+sample <- read.csv("./repdata-data-StormData.csv", nrows=100)
+name <- names(sample)
+
+tmp <- Sys.time()
+data <- read.csv("./repdata-data-StormData.csv", header=TRUE, sep= ",", col.names = name)
+interval <- Sys.time()-tmp
+```
+<br>
+<h4 align="left"> B - Processing the Raw Data</h4>
+The first task set here is the reduction of size of the present data, as it took `r interval` minutes to load data, one can easily conclude that size of the data is enormous. To this end a first look at column names is needed.
+```{r, cache = TRUE}
+names(data)
+```
+At this point of that only a limited number of variables from those available in the data set are necessary to be able to answer to the problematic of the study. A full description of all variables is available in [Storm Data Dcoumentation](https://d396qusza40orc.cloudfront.net/repdata%2Fpeer2_doc%2Fpd01016005curr.pdf). However, the list of names and descriptions of the restricted number of needed variables is given in the table below.<br>
+<br>
+<table border ="4" align="center">
+  <tr>
+<td>Variable Name</td>        
+<td>Variable Description</td>
+  </tr>
+
+  <tr>
+<td>BGN_DATE</td>        
+<td>year of storm occurrence</td>
+  </tr>
+
+  <tr>
+<td>EVTYPE</td>	
+<td>the type of storm event</td>
+  </tr>
+
+  <tr>
+<td>FATALITIES</td>
+<td>the number of fatalities attributed to the event</td>
+  </tr>
+
+  <tr>	
+<td>INJURIES</td>
+<td>the number of injuries attributed to the event</td>
+  </tr>
+
+  <tr>	
+<td>PROPDMG</td>
+<td>the amount of property damage attributed to the event</td>
+  </tr>
+
+  <tr>
+<td>PROPDMGEXP</td>
+<td>multiplier Hundred (H), Thousand (D), Million (M), Billion (B)</td>
+  </tr>
+
+  <tr>
+<td>CROPDMG</td>
+<td>the amount of crop damage attributed to the event</td>
+  </tr>
+
+  <tr>
+<td>CROPDMGEXP</td>
+<td>multiplier Hundred (H), Thousand (K), Million (M), Billion (B)</td>
+  </tr>
+</table>
+<h6 align="center">Table 1: List of extracted Variables</h6>
+<br>
+Only the needed variables listed above are extracted from the raw data set and the variable <u>data</u> is reassigned to this new data set.
+```{r, cache = TRUE}
+data <- data[, c("BGN_DATE","EVTYPE", "FATALITIES", "INJURIES", "PROPDMG", "PROPDMGEXP", "CROPDMG", "CROPDMGEXP")]
+```
+<br>
+<h1 align = "center"> Data Transformation </h1>
+<div style="border-top: 2px dashed ; margin-top: 1em; padding-top: 1em;"> </div>
+
+This study answers to two questions mainly:
+1. Which types of storm events (as indicated in the EVTYPE variable) are most harmful with respect to population health?
+2. Which types of storm events have the greatest economic consequences?<br>
+Hence data should be transformed to answer to these questions.
+<br>
+<h4 align="left"> A - Columns class in Data</h4>
+First just a general look at the resulting data set. 
+```{r, cache = TRUE}
+r <- nrow(data)
+c <- ncol(data)
+str(data)
+```
+The data set has `r r` observations for `r c` variables listed (in Table 1) above. Additionally looking at the structure of it, one can observe that although all variables are correctly labeled as factors or numeric, **EVTYPE**, **PROPDMGEXP**, and **CROPDMGEXP** being of the former class and **FATALITIES**, **INJURIES**, **PROPDMG**, and **CROPDMG** being of latter class, **BGN_DATE** is incorrectly labeled as factor while its class must be date.
+```{r, cache = TRUE}
+library(lubridate)
+data$BGN_DATE <- arrive <- mdy_hms(as.character(data$BGN_DATE))
+cl <- class(data$BGN_DATE)
+head(data$BGN_DATE)
+```
+`lubridate` library is used here to transform class of variable **BGN_DATE** to `r cl` class more appropriate for dates.<br>
+The next thing that should be observed are the summaries of the factor variables.
+
+<h4 align="left"> B - CROPDMGEXP and PROPDMGEXP variables</h4>
+According to the documentation on Storm Data online, these two variables are multiplier that are coded B, M, K, H or NA/BLANK for billionth, millionth, thousandth, hundredth and unit multipliers respectively.
+```{r, cache = TRUE}
+summary(data$CROPDMGEXP)
+summary(data$PROPDMGEXP)
+```
+However, in the data set these variables take more values than just the ones listed. Without adding the capital small later distinctions, 8 illogical values for these variables are observed if ` ? 0 1` can be more or less logically concluded to represent unit multipliers.<br>
+The next step taken then should be the replacement of coded values by more informative values, B taking value 1 000 000 000 and M 1 000 000 and so on without distinct to capital or small letter, and with ` ? 0 1` considered as unit multiplier so taking value 1 and NA for the rest. This is what is done in the code below.
+```{r, cache = TRUE}
+data$CROPDMGEXP  <- ifelse(data$CROPDMGEXP==""|data$CROPDMGEXP=="?"|data$CROPDMGEXP=="0"| data$CROPDMGEXP=="1",1,ifelse(data$CROPDMGEXP=="m"|data$CROPDMGEXP=="M", 1000000, ifelse(data$CROPDMGEXP=="B", 1000000000, ifelse(data$CROPDMGEXP=="k"| data$CROPDMGEXP=="K", 1000, ifelse(data$CROPDMGEXP=="H"| data$CROPDMGEXP=="h", 100 , NA)))))
+
+data$PROPDMGEXP  <- ifelse(data$PROPDMGEXP==""|data$PROPDMGEXP=="?"|data$PROPDMGEXP=="0"| data$PROPDMGEXP=="1",1,ifelse(data$PROPDMGEXP=="m"|data$PROPDMGEXP=="M", 1000000, ifelse(data$PROPDMGEXP=="B", 1000000000, ifelse(data$PROPDMGEXP=="k"| data$PROPDMGEXP=="K", 1000, ifelse(data$PROPDMGEXP=="H"| data$PROPDMGEXP=="h", 100 , NA)))))
+```
+<h4 align="left"> C - EVTYPE variable and Storm Event Type</h4>
+The question of the type of storm event is central to this analysis. Hence, it is essential to now exactly how many type of storm events are represented in our data set. The following code does just that.
+```{r, cache = TRUE}
+num1 <- length(unique(data$EVTYPE))
+```
+About `r num1` type of storm events are observed in the data set. Now one can reasonably assume that not all categories of storm type can be observed in any sensible way at least with descriptive statistics analysis tools. The reduction of number of type of storm events is therefore proposed. However, this truncation should try to hold as many observations as possible of the original data set. It is proposed then to only retain the 12 type of storms that occur the most throughout the data set.Let's then calculate what percentage of original data is conserved.
+```{r, cache = TRUE}
+rude <- data.frame(head(summary(data$EVTYPE),12))
+percent <- round((colSums(rude)/nrow(data)), digits = 2)*100
+```
+We can indeed see that about `r percent`% of original observation will be conserved by looking just at the top 12 best performers in type of storm event. Let's then give out, below, the names of these 12 top performer type of storms and their number of occurrence in the data set.
+```{r, cache = TRUE}
+names(rude)="Occurrence Count"
+rude
+```
+The question of clustering the rest of categories in group one could call *other* has occured. However this idea can be discarded because of the wide variety of types of storm events that this group would represent, rendering any conclusions that could be drawn from it void.
+The next line of code then subsets the part of data that interests us and reassign to this subset the variable <u>data</u>.
+```{r, cache = TRUE}
+data <- data[data$EVTYPE %in% rownames(rude),]
+```
+<h4 align="left"> D - Material Cost, CROPDMG and PROPDMG variables</h4>
+As seen above, CROPDMGEXP and PROPDMGEXP variables are multipliers of variables CROPDMG and PROPDMG respectively, the two latter variables recording the material damage cost caused by the different storms. The material damage cost is viewed as the sum of damage to property and damage to crops. The unit of measure for both type of the cost is the US Dollars. So one can just use CROPDMGEXP and PROPDMGEXP columns to multiply CROPDMG and PROPDMG columns respectively element by element. The resulting column will give an estimation of damage in plain US Dollars. The latter two columns then can be erased. An additional column that sums up the new CROPDMG and PROPDMG columns called **MC** for material cost can be constructed, because both columns are expressed now in the same unit called US Dollars. The unit of the new column is hence identically the US Dollar.The code chunk just below does just that.
+```{r, cache = TRUE}
+data$CROPDMG <- data$CROPDMGEXP*data$CROPDMG
+data$PROPDMG <- data$PROPDMGEXP*data$PROPDMG
+data$MC <- data$CROPDMG + data$PROPDMG
+data$CROPDMGEXP <- NULL
+data$PROPDMGEXP <- NULL
+```
+<h4 align="left"> E - Human Cost, FATALITIES and INJURIES variables</h4>
+
